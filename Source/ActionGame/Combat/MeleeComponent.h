@@ -106,7 +106,7 @@ protected:
 
 	/** Weapon length used when the end socket is missing (extends along the owner's forward). */
 	UPROPERTY(EditAnywhere, Category = "Melee|Trace", meta = (ClampMin = "0"))
-	float FallbackReach = 90.f;
+	float MissingSocketReach = 90.f;
 
 	/** Default sockets when no trace source is set (the owner's mesh is used). */
 	UPROPERTY(EditAnywhere, Category = "Melee|Trace")

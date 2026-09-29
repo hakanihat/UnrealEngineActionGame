@@ -435,7 +435,7 @@ void UMeleeComponent::GatherSamplePoints(TArray<FVector>& OutPoints) const
 	const FVector Start = ActiveStartSocket.IsNone() ? Source->GetComponentLocation() : Source->GetSocketLocation(ActiveStartSocket);
 	const FVector End = (!ActiveEndSocket.IsNone() && Source->DoesSocketExist(ActiveEndSocket))
 		? Source->GetSocketLocation(ActiveEndSocket)
-		: Start + GetOwner()->GetActorForwardVector() * FallbackReach;
+		: Start + GetOwner()->GetActorForwardVector() * MissingSocketReach;
 
 	for (int32 Index = 0; Index < TraceSamples; ++Index)
 	{
