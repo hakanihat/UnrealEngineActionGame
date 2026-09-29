@@ -27,7 +27,6 @@ AActionCharacterBase::AActionCharacterBase(const FObjectInitializer& ObjectIniti
 	MeshComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);     // Simulated limbs never fight capsules.
 	MeshComp->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	MeshComp->SetGenerateOverlapEvents(false);
-	MeshComp->bReturnMaterialOnMove = false;
 
 	// Snappy, responsive movement baseline for an action game. Tune per character in Blueprints.
 	UCharacterMovementComponent* Movement = GetCharacterMovement();

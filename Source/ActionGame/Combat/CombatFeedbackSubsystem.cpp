@@ -6,6 +6,8 @@
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
+#include "Sound/SoundBase.h"
 
 UCombatFeedbackSubsystem* UCombatFeedbackSubsystem::Get(const UObject* WorldContextObject)
 {

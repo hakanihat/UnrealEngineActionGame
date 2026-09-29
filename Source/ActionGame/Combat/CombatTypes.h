@@ -4,6 +4,8 @@
 #include "GameplayTagContainer.h"
 #include "CombatTypes.generated.h"
 
+class AActor;
+
 /** Which side a combatant fights for. Neutral actors (props, barrels) can be damaged by anyone. */
 UENUM(BlueprintType)
 enum class ECombatTeam : uint8

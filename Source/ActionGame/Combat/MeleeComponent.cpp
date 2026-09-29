@@ -427,7 +427,7 @@ void UMeleeComponent::ProcessHit(const FHitResult& HitResult, const FVector& Swi
 		return;
 	}
 
-	const FVector ImpactPoint = HitResult.bStartPenetrating ? HitResult.TraceStart : FVector(HitResult.ImpactPoint);
+	const FVector ImpactPoint = HitResult.bStartPenetrating ? FVector(HitResult.TraceStart) : FVector(HitResult.ImpactPoint);
 
 	// Loose physics props get knocked around by the blade.
 	UPrimitiveComponent* HitComponent = HitResult.GetComponent();

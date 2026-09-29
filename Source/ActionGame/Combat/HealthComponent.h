@@ -7,9 +7,9 @@
 
 class UHealthComponent;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnHealthChanged, UHealthComponent*, HealthComponent, float, NewHealth, float, Delta);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnHealthValueChanged, UHealthComponent*, HealthComponent, float, NewHealth, float, Delta);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageTaken, const FCombatHit&, Hit, const FCombatDamageResult&, Result);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDeath, AActor*, DeadActor, const FCombatHit&, KillingHit);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCombatantDeath, AActor*, DeadActor, const FCombatHit&, KillingHit);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCombatHitEvent, const FCombatHit&, Hit);
 
 /**
@@ -63,7 +63,7 @@ public:
 	float GetLastDamageTime() const { return LastDamageTime; }
 
 	UPROPERTY(BlueprintAssignable, Category = "Health")
-	FOnHealthChanged OnHealthChanged;
+	FOnHealthValueChanged OnHealthChanged;
 
 	/** Fired for every applied hit, with the resolved result. Main hook for reactions. */
 	UPROPERTY(BlueprintAssignable, Category = "Health")
@@ -77,7 +77,7 @@ public:
 	FOnCombatHitEvent OnPoiseBroken;
 
 	UPROPERTY(BlueprintAssignable, Category = "Health")
-	FOnDeath OnDeath;
+	FOnCombatantDeath OnDeath;
 
 protected:
 	virtual void BeginPlay() override;
