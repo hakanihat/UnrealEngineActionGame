@@ -27,7 +27,8 @@ Everything is written in C++ and data-driven. **The demo is playable before you 
 3. In the editor, choose **File > New Level > Basic**. That level has a floor, lights and a Player Start.
 4. From the **Place Actors** panel, search for **Demo Arena Director** and drop it on the floor a few meters in front of the Player Start.
 5. Optional but recommended: add a **Nav Mesh Bounds Volume** covering the floor, so enemies path around props. Without it they walk straight at you.
-6. Press **Play**. Walk into the arena and fight.
+6. **Save the level** (Ctrl+S). Restart-on-death reloads the saved map.
+7. Press **Play**. Walk into the arena and fight.
 
 **Colors:** you are the blue capsule, grunts are red, and gunners are orange. The large red capsule is the boss.
 
