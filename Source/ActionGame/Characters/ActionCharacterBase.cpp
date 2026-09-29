@@ -6,6 +6,9 @@
 #include "Combat/MeleeComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
+#include "Engine/StaticMesh.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "PhysicsEngine/PhysicalAnimationComponent.h"
 
@@ -50,6 +53,34 @@ void AActionCharacterBase::BeginPlay()
 
 	HealthComponent->OnDeath.AddDynamic(this, &AActionCharacterBase::HandleDeath);
 	HitReactionComponent->OnHitReaction.AddDynamic(this, &AActionCharacterBase::HandleInterrupted);
+	CreatePlaceholderBodyIfNeeded();
+}
+
+void AActionCharacterBase::CreatePlaceholderBodyIfNeeded()
+{
+	if (GetMesh()->GetSkeletalMeshAsset())
+	{
+		return;
+	}
+	UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+	if (!Cylinder)
+	{
+		return;
+	}
+
+	UStaticMeshComponent* Body = NewObject<UStaticMeshComponent>(this, TEXT("PlaceholderBody"));
+	PlaceholderBody = Body;
+	Body->SetStaticMesh(Cylinder);
+	Body->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Body->SetupAttachment(GetCapsuleComponent());
+	Body->RegisterComponent();
+
+	// The engine cylinder is 100 x 100 units; stretch it to the capsule.
+	const UCapsuleComponent* Capsule = GetCapsuleComponent();
+	const float Diameter = Capsule->GetUnscaledCapsuleRadius() * 2.f / 100.f;
+	const float Height = Capsule->GetUnscaledCapsuleHalfHeight() * 2.f / 100.f;
+	Body->SetRelativeScale3D(FVector(Diameter, Diameter, Height));
+	Body->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(PlaceholderColor.R, PlaceholderColor.G, PlaceholderColor.B));
 }
 
 FVector AActionCharacterBase::GetTargetPoint() const
@@ -117,6 +148,17 @@ void AActionCharacterBase::HandleDeath(AActor* DeadActor, const FCombatHit& Kill
 	AddStateTag(ActionGameTags::State_Dead);
 	MeleeComponent->CancelAttack();
 	GetCharacterMovement()->DisableMovement();
+
+	// Placeholder bodies topple over along the killing blow (skeletal meshes ragdoll instead).
+	if (PlaceholderBody)
+	{
+		PlaceholderBody->SetCollisionProfileName(TEXT("PhysicsActor"));
+		PlaceholderBody->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+		PlaceholderBody->SetSimulatePhysics(true);
+		const FVector Kick = KillingHit.HitDirection.GetSafeNormal() * (500.f + KillingHit.Spec.KnockbackStrength)
+			+ FVector(0.f, 0.f, 200.f + KillingHit.Spec.LaunchStrength);
+		PlaceholderBody->AddImpulseAtLocation(Kick * PlaceholderBody->GetMass(), GetActorLocation() + FVector(0.f, 0.f, 60.f));
+	}
 }
 
 void AActionCharacterBase::HandleInterrupted(EHitReaction Reaction, bool bStaggered)

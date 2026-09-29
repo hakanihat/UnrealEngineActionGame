@@ -169,6 +169,7 @@ void ABossCharacter::OnEngaged()
 	if (AActionGameMode* GameMode = GetWorld()->GetAuthGameMode<AActionGameMode>())
 	{
 		GameMode->RegisterBoss(this, BossName);
+		GameMode->Announce(BossName, 3.f);
 	}
 }
 

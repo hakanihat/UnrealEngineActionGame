@@ -31,6 +31,7 @@ public:
 	AActionGameMode();
 
 	virtual void SetPlayerDefaults(APawn* PlayerPawn) override;
+	virtual UClass* GetDefaultPawnClassForController_Implementation(AController* InController) override;
 
 	/** Called by a boss when its fight begins. Shows the boss bar and tracks its death. */
 	UFUNCTION(BlueprintCallable, Category = "Demo")
@@ -44,6 +45,13 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Demo")
 	EDemoState GetDemoState() const { return DemoState; }
+
+	/** Big centered message ("WAVE 2", "The Hollow Warden awakens"...). */
+	UFUNCTION(BlueprintCallable, Category = "Demo")
+	void Announce(FText Text, float Duration = 2.5f);
+
+	/** Current announcement and its opacity (0 when none). */
+	FText GetAnnouncement(float& OutAlpha) const;
 
 	UPROPERTY(BlueprintAssignable, Category = "Demo")
 	FOnDemoStateChanged OnDemoStateChanged;
@@ -69,6 +77,10 @@ private:
 
 	void SetDemoState(EDemoState NewState);
 	void RestartCurrentLevel();
+
+	FText AnnouncementText;
+	float AnnouncementStartTime = -1000.f;
+	float AnnouncementDuration = 0.f;
 
 	TWeakObjectPtr<AActionCharacterBase> ActiveBoss;
 	FText BossName;

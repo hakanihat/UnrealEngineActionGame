@@ -246,6 +246,13 @@ void AActionHUD::DrawDemoState()
 	{
 		return;
 	}
+	float AnnouncementAlpha = 0.f;
+	const FText Announcement = GameMode->GetAnnouncement(AnnouncementAlpha);
+	if (AnnouncementAlpha > 0.f)
+	{
+		DrawCenteredText(Announcement.ToString(), Canvas->ClipY * 0.28f, FLinearColor(1.f, 1.f, 1.f, AnnouncementAlpha), 1.8f * UIScale);
+	}
+
 	switch (GameMode->GetDemoState())
 	{
 	case EDemoState::Victory:

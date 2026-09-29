@@ -28,6 +28,7 @@ AActionPlayerCharacter::AActionPlayerCharacter(const FObjectInitializer& ObjectI
 {
 	PrimaryActorTick.bCanEverTick = true;
 	Team = ECombatTeam::Player;
+	PlaceholderColor = FLinearColor(0.1f, 0.35f, 0.9f);
 
 	GetCapsuleComponent()->InitCapsuleSize(35.f, 90.f);
 	GetMesh()->SetRelativeLocationAndRotation(FVector(0.f, 0.f, -90.f), FRotator(0.f, -90.f, 0.f));

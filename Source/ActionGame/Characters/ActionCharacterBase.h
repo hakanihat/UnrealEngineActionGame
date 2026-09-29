@@ -12,6 +12,7 @@ class UHealthComponent;
 class UHitReactionComponent;
 class UMeleeComponent;
 class UPhysicalAnimationComponent;
+class UStaticMeshComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageDealt, const FCombatHit&, Hit, const FCombatDamageResult&, Result);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStateTagChanged, FGameplayTag, Tag, bool, bAdded);
@@ -94,11 +95,21 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	ECombatTeam Team = ECombatTeam::Enemy;
 
+	/** Colour of the placeholder body shown when no skeletal mesh is assigned. */
+	UPROPERTY(EditAnywhere, Category = "Placeholder")
+	FLinearColor PlaceholderColor = FLinearColor(0.8f, 0.1f, 0.1f);
+
 	/** Bone used as the aim / lock-on point. Falls back to the capsule center if missing. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	FName TargetPointBone = TEXT("spine_03");
 
 private:
+	/** Shows a simple capsule body when no character mesh is set, so the game is playable with zero art. */
+	void CreatePlaceholderBodyIfNeeded();
+
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> PlaceholderBody;
+
 	TMap<FGameplayTag, int32> StateTagCounts;
 
 	UPROPERTY(VisibleInstanceOnly, Category = "State")

@@ -62,6 +62,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Encounter")
 	void StartEncounter();
 
+	/** Code/Blueprint setup (e.g. by ADemoArenaDirector). Call before the encounter starts. */
+	void Configure(const TArray<FEncounterWave>& InWaves, const FVector& TriggerExtent, float InSpawnScatter);
+
+	/** A disabled trigger ignores the player; the encounter can still be started manually. */
+	void SetTriggerEnabled(bool bEnabled);
+
 	UFUNCTION(BlueprintPure, Category = "Encounter")
 	bool IsActive() const { return bActive; }
 
@@ -97,6 +103,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Encounter")
 	FImpactEffect SpawnEffect;
+
+	/** Show "Wave X / Y" when each wave starts (only for multi-wave encounters). */
+	UPROPERTY(EditAnywhere, Category = "Encounter|Feel")
+	bool bAnnounceWaves = true;
 
 	UPROPERTY(EditAnywhere, Category = "Encounter|Feel", meta = (ClampMin = "0.01", ClampMax = "1"))
 	float FinalKillTimeScale = 0.2f;

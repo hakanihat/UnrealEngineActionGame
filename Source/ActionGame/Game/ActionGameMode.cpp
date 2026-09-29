@@ -1,4 +1,5 @@
 #include "Game/ActionGameMode.h"
+#include "ActionGameSettings.h"
 #include "Characters/ActionCharacterBase.h"
 #include "Characters/ActionPlayerCharacter.h"
 #include "Combat/CombatFeedbackSubsystem.h"
@@ -13,6 +14,16 @@ AActionGameMode::AActionGameMode()
 	DefaultPawnClass = AActionPlayerCharacter::StaticClass();
 	PlayerControllerClass = AActionPlayerController::StaticClass();
 	HUDClass = AActionHUD::StaticClass();
+}
+
+UClass* AActionGameMode::GetDefaultPawnClassForController_Implementation(AController* InController)
+{
+	// Project Settings > Game > Action Game > Player Pawn Class wins, so no Blueprint game mode is required.
+	if (UClass* ConfiguredClass = GetDefault<UActionGameSettings>()->PlayerPawnClass.LoadSynchronous())
+	{
+		return ConfiguredClass;
+	}
+	return Super::GetDefaultPawnClassForController_Implementation(InController);
 }
 
 void AActionGameMode::SetPlayerDefaults(APawn* PlayerPawn)
@@ -40,6 +51,28 @@ void AActionGameMode::RegisterBoss(AActionCharacterBase* Boss, FText DisplayName
 	{
 		Health->OnDeath.AddUniqueDynamic(this, &AActionGameMode::HandleBossDeath);
 	}
+}
+
+void AActionGameMode::Announce(FText Text, float Duration)
+{
+	AnnouncementText = Text;
+	AnnouncementStartTime = GetWorld()->GetRealTimeSeconds();
+	AnnouncementDuration = FMath::Max(0.1f, Duration);
+}
+
+FText AActionGameMode::GetAnnouncement(float& OutAlpha) const
+{
+	const float Elapsed = GetWorld()->GetRealTimeSeconds() - AnnouncementStartTime;
+	if (Elapsed < 0.f || Elapsed > AnnouncementDuration)
+	{
+		OutAlpha = 0.f;
+		return FText::GetEmpty();
+	}
+	// Quick fade in, hold, fade out over the last 30%.
+	const float FadeIn = FMath::Clamp(Elapsed / 0.15f, 0.f, 1.f);
+	const float FadeOut = FMath::Clamp((AnnouncementDuration - Elapsed) / (AnnouncementDuration * 0.3f), 0.f, 1.f);
+	OutAlpha = FMath::Min(FadeIn, FadeOut);
+	return AnnouncementText;
 }
 
 void AActionGameMode::HandlePlayerDeath(AActor* DeadActor, const FCombatHit& KillingHit)

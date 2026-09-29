@@ -122,6 +122,25 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Melee|Debug")
 	bool bDrawDebugTraces = false;
 
+	// --- Fallback (no animation) ---
+
+	/**
+	 * When the requested attack has no montage (or there is no moveset), perform an instant
+	 * sweep instead. Lets you tune hit feel, reactions and enemies before any animation exists.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Melee|Fallback")
+	bool bUseFallbackSwing = true;
+
+	UPROPERTY(EditAnywhere, Category = "Melee|Fallback")
+	FCombatDamageSpec FallbackDamage;
+
+	UPROPERTY(EditAnywhere, Category = "Melee|Fallback", meta = (ClampMin = "0"))
+	float FallbackReach = 200.f;
+
+	/** Minimum time between fallback swings (the "attack speed"). */
+	UPROPERTY(EditAnywhere, Category = "Melee|Fallback", meta = (ClampMin = "0.05"))
+	float FallbackInterval = 0.3f;
+
 private:
 	const FMeleeAttack* SelectAttack(EMeleeAttackKind Kind);
 	bool StartAttack(const FMeleeAttack& Attack, EMeleeAttackKind Kind, AActor* Target, const FVector& DesiredFacing);
@@ -135,6 +154,7 @@ private:
 	void TickWeaponTrace();
 	void ProcessHit(const FHitResult& HitResult, const FVector& SwingDirection);
 
+	bool PerformFallbackSwing(EMeleeAttackKind Kind, AActor* Target, const FVector& DesiredFacing);
 	void TryConsumeBufferedInput();
 	void RestoreGravity();
 	void RefreshTickEnabled();
@@ -178,4 +198,8 @@ private:
 
 	// Air hang
 	float SavedGravityScale = -1.f;
+
+	// Fallback swings
+	float LastFallbackSwingTime = -1000.f;
+	int32 FallbackComboCount = 0;
 };

@@ -3,6 +3,7 @@
 #include "Characters/EnemyCharacter.h"
 #include "Combat/CombatFeedbackSubsystem.h"
 #include "Combat/HealthComponent.h"
+#include "Game/ActionGameMode.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/Pawn.h"
 #include "TimerManager.h"
@@ -22,6 +23,18 @@ void AArenaEncounter::BeginPlay()
 	Super::BeginPlay();
 	Trigger->OnComponentBeginOverlap.AddDynamic(this, &AArenaEncounter::HandleTriggerOverlap);
 	SetBlockersActive(false);
+}
+
+void AArenaEncounter::Configure(const TArray<FEncounterWave>& InWaves, const FVector& TriggerExtent, float InSpawnScatter)
+{
+	Waves = InWaves;
+	Trigger->SetBoxExtent(TriggerExtent, Trigger->IsRegistered()); // No overlap queries before registration.
+	SpawnScatter = InSpawnScatter;
+}
+
+void AArenaEncounter::SetTriggerEnabled(bool bEnabled)
+{
+	Trigger->SetCollisionEnabled(bEnabled ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
 }
 
 void AArenaEncounter::HandleTriggerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -59,6 +72,14 @@ void AArenaEncounter::StartWave(int32 WaveIndex)
 	SpawnQueue.Reset();
 
 	const FEncounterWave& Wave = Waves[WaveIndex];
+	if (bAnnounceWaves && Waves.Num() > 1)
+	{
+		if (AActionGameMode* GameMode = GetWorld()->GetAuthGameMode<AActionGameMode>())
+		{
+			GameMode->Announce(FText::Format(NSLOCTEXT("ActionGame", "WaveAnnouncement", "Wave {0} / {1}"),
+				FText::AsNumber(WaveIndex + 1), FText::AsNumber(Waves.Num())), 2.f);
+		}
+	}
 	for (const FEncounterSpawn& Spawn : Wave.Spawns)
 	{
 		if (!Spawn.EnemyClass)

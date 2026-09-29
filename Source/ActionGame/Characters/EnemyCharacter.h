@@ -111,8 +111,12 @@ public:
 	/** The attacks currently available (bosses swap these per phase). */
 	virtual const TArray<FEnemyAttack>& GetAttacks() const { return Attacks; }
 
-	/** Weighted random pick among off-cooldown attacks. INDEX_NONE if none are ready. */
-	int32 ChooseAttack() const;
+	/**
+	 * Weighted random pick among off-cooldown attacks. Attacks already in range are preferred;
+	 * otherwise only attacks reachable by closing in (not "too close") are considered.
+	 * INDEX_NONE if nothing is usable.
+	 */
+	int32 ChooseAttack(float DistanceToTarget) const;
 
 	bool IsAttackInRange(int32 AttackIndex, float Distance) const;
 	bool ExecuteAttack(int32 AttackIndex, AActor* Target);

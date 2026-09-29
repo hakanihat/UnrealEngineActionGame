@@ -15,6 +15,15 @@ UMeleeComponent::UMeleeComponent()
 	PrimaryComponentTick.bStartWithTickEnabled = false;
 	// Trace after animation has moved the weapon this frame.
 	PrimaryComponentTick.TickGroup = TG_PostUpdateWork;
+
+	FallbackDamage.Damage = 14.f;
+	FallbackDamage.PoiseDamage = 18.f;
+	FallbackDamage.Reaction = EHitReaction::Flinch;
+	FallbackDamage.KnockbackStrength = 200.f;
+	FallbackDamage.HitStop = 0.07f;
+	FallbackDamage.CameraTrauma = 0.12f;
+	FallbackDamage.PhysicalImpulse = 600.f;
+	FallbackDamage.DamageType = ActionGameTags::Damage_Blade;
 }
 
 void UMeleeComponent::BeginPlay()
@@ -41,9 +50,13 @@ void UMeleeComponent::SetTraceSource(UPrimitiveComponent* Component, FName Start
 
 bool UMeleeComponent::RequestAttack(EMeleeAttackKind Kind, AActor* Target, FVector DesiredFacing)
 {
-	if (!Moveset || !OwnerCharacter)
+	if (!OwnerCharacter)
 	{
 		return false;
+	}
+	if (!Moveset)
+	{
+		return PerformFallbackSwing(Kind, Target, DesiredFacing);
 	}
 
 	if (bIsAttacking)
@@ -59,7 +72,60 @@ bool UMeleeComponent::RequestAttack(EMeleeAttackKind Kind, AActor* Target, FVect
 	}
 
 	const FMeleeAttack* Attack = SelectAttack(Kind);
-	return Attack && StartAttack(*Attack, Kind, Target, DesiredFacing);
+	if (!Attack || !Attack->Montage)
+	{
+		return PerformFallbackSwing(Kind, Target, DesiredFacing);
+	}
+	return StartAttack(*Attack, Kind, Target, DesiredFacing);
+}
+
+bool UMeleeComponent::PerformFallbackSwing(EMeleeAttackKind Kind, AActor* Target, const FVector& DesiredFacing)
+{
+	const float Now = GetWorld()->GetTimeSeconds();
+	if (!bUseFallbackSwing || Now - LastFallbackSwingTime < FallbackInterval)
+	{
+		return false;
+	}
+	if (Now - LastFallbackSwingTime > 1.f)
+	{
+		FallbackComboCount = 0; // Too slow: the chain drops, like a real combo.
+	}
+	LastFallbackSwingTime = Now;
+	++FallbackComboCount;
+
+	// Every 4th hit (or a heavy press) is a finisher, so the rhythm is felt even without animation.
+	FCombatDamageSpec Spec = FallbackDamage;
+	if (Kind == EMeleeAttackKind::Heavy || FallbackComboCount % 4 == 0)
+	{
+		Spec.Damage *= 2.f;
+		Spec.PoiseDamage *= 2.f;
+		Spec.Reaction = EHitReaction::Knockback;
+		Spec.KnockbackStrength = 900.f;
+		Spec.HitStop = 0.12f;
+		Spec.CameraTrauma = 0.35f;
+		Spec.PhysicalImpulse *= 1.5f;
+		FallbackComboCount = 0;
+	}
+
+	// Snap to the target instantly (there are no animation frames to hide a slide).
+	CurrentAttack = FMeleeAttack();
+	CurrentAttack.Damage = Spec;
+	StartMagnetism(Target, DesiredFacing);
+	if (bMagnetizing)
+	{
+		GetOwner()->SetActorLocation(FVector(MagnetEnd.X, MagnetEnd.Y, GetOwner()->GetActorLocation().Z), true);
+		bMagnetizing = false;
+	}
+
+	OnAttackStarted.Broadcast(Kind);
+
+	TArray<TPair<FCombatHit, FCombatDamageResult>> Hits;
+	UCombatLibrary::ApplyFrontalSweep(GetOwner(), Spec, FallbackReach, &Hits);
+	for (const TPair<FCombatHit, FCombatDamageResult>& Entry : Hits)
+	{
+		OnHitLanded.Broadcast(Entry.Key, Entry.Value);
+	}
+	return true;
 }
 
 bool UMeleeComponent::PerformAttack(const FMeleeAttack& Attack, AActor* Target)

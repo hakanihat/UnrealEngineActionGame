@@ -17,6 +17,7 @@ namespace
 UTelekinesisComponent::UTelekinesisComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	DebrisClass = ATelekineticProp::StaticClass();
 }
 
 void UTelekinesisComponent::BeginPlay()

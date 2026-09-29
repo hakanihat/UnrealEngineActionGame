@@ -4,6 +4,7 @@
 #include "Engine/DeveloperSettings.h"
 #include "ActionGameSettings.generated.h"
 
+class APawn;
 class UCombatFeedbackConfig;
 
 /** Project-wide settings, editable in Project Settings > Game > Action Game. */
@@ -14,6 +15,10 @@ class ACTIONGAME_API UActionGameSettings : public UDeveloperSettings
 
 public:
 	virtual FName GetCategoryName() const override { return TEXT("Game"); }
+
+	/** Player Blueprint to spawn (e.g. BP_Player). Empty = the bare C++ player with a placeholder body. */
+	UPROPERTY(Config, EditAnywhere, Category = "Game")
+	TSoftClassPtr<APawn> PlayerPawnClass;
 
 	/** Global impact/hitstop/camera tuning used by the CombatFeedbackSubsystem. */
 	UPROPERTY(Config, EditAnywhere, Category = "Combat")

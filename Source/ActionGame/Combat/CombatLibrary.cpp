@@ -103,6 +103,72 @@ int32 UCombatLibrary::ApplyRadialDamage(const UObject* WorldContextObject, const
 	return NumDamaged;
 }
 
+int32 UCombatLibrary::ApplyFrontalSweep(AActor* Attacker, const FCombatDamageSpec& Spec, float Reach,
+	TArray<TPair<FCombatHit, FCombatDamageResult>>* OutHits)
+{
+	UWorld* World = Attacker ? Attacker->GetWorld() : nullptr;
+	if (!World)
+	{
+		return 0;
+	}
+
+	const FVector Forward = Attacker->GetActorForwardVector();
+	const float Radius = Reach * 0.5f + 40.f;
+	const FVector Center = Attacker->GetActorLocation() + Forward * Reach * 0.5f;
+
+	FCollisionObjectQueryParams ObjectParams;
+	ObjectParams.AddObjectTypesToQuery(ECC_Pawn);
+	ObjectParams.AddObjectTypesToQuery(ECC_PhysicsBody);
+	ObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+
+	TArray<FOverlapResult> Overlaps;
+	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(FrontalSweep), false, Attacker);
+	World->OverlapMultiByObjectType(Overlaps, Center, FQuat::Identity, ObjectParams, FCollisionShape::MakeSphere(Radius), QueryParams);
+
+	TSet<AActor*> Processed;
+	int32 NumDamaged = 0;
+	for (const FOverlapResult& Overlap : Overlaps)
+	{
+		AActor* Victim = Overlap.GetActor();
+		if (!Victim || Processed.Contains(Victim))
+		{
+			continue;
+		}
+		Processed.Add(Victim);
+
+		UPrimitiveComponent* Component = Overlap.GetComponent();
+		if (Component && Component->IsSimulatingPhysics() && !GetHealthComponent(Victim))
+		{
+			Component->AddImpulse(Forward * Spec.PhysicalImpulse, NAME_None, true);
+			continue;
+		}
+		if (!CanDamage(Attacker, Victim) || !IsAlive(Victim))
+		{
+			continue;
+		}
+
+		FCombatHit Hit;
+		Hit.Spec = Spec;
+		Hit.Instigator = Attacker;
+		Hit.DamageCauser = Attacker;
+		Hit.Target = Victim;
+		Hit.ImpactPoint = GetTargetPoint(Victim);
+		Hit.HitDirection = (Victim->GetActorLocation() - Attacker->GetActorLocation()).GetSafeNormal2D();
+		Hit.ImpactNormal = -Hit.HitDirection;
+
+		const FCombatDamageResult Result = ApplyDamage(Hit);
+		if (Result.bApplied)
+		{
+			++NumDamaged;
+			if (OutHits)
+			{
+				OutHits->Emplace(Hit, Result);
+			}
+		}
+	}
+	return NumDamaged;
+}
+
 ECombatTeam UCombatLibrary::GetTeam(const AActor* Actor)
 {
 	const ICombatant* Combatant = Cast<ICombatant>(Actor);

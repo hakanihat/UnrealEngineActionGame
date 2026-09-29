@@ -30,6 +30,15 @@ public:
 	static int32 ApplyRadialDamage(const UObject* WorldContextObject, const FCombatDamageSpec& Spec, FVector Origin, float Radius,
 		AActor* Instigator, AActor* DamageCauser, float MinFalloff = 0.35f);
 
+	/**
+	 * Damages every valid target in a sphere just in front of Attacker and shoves loose props.
+	 * Used by attacks that have no animation yet, so combat can be tested before art exists.
+	 * @param OutHits  Optional: receives each applied hit and its result.
+	 * @return number of targets damaged.
+	 */
+	static int32 ApplyFrontalSweep(AActor* Attacker, const FCombatDamageSpec& Spec, float Reach,
+		TArray<TPair<FCombatHit, FCombatDamageResult>>* OutHits = nullptr);
+
 	UFUNCTION(BlueprintPure, Category = "Combat")
 	static ECombatTeam GetTeam(const AActor* Actor);
 

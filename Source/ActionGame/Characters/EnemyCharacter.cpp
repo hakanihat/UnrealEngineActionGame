@@ -7,7 +7,6 @@
 #include "Combat/MeleeComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Engine/OverlapResult.h"
 #include "Game/HealthOrb.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
@@ -58,33 +57,43 @@ void AEnemyCharacter::BeginPlay()
 // Attack selection & execution
 // ---------------------------------------------------------------------------------------------
 
-int32 AEnemyCharacter::ChooseAttack() const
+int32 AEnemyCharacter::ChooseAttack(float DistanceToTarget) const
 {
 	const TArray<FEnemyAttack>& Available = GetAttacks();
 	const float Now = GetWorld()->GetTimeSeconds();
 
-	TArray<int32, TInlineAllocator<8>> Candidates;
-	float TotalWeight = 0.f;
-	for (int32 Index = 0; Index < Available.Num(); ++Index)
+	auto PickWeighted = [&Available](const TArray<int32, TInlineAllocator<8>>& Candidates) -> int32
 	{
-		const float* ReadyTime = AttackReadyTimes.Find(Index);
-		if (Available[Index].Weight > 0.f && (!ReadyTime || Now >= *ReadyTime))
+		float TotalWeight = 0.f;
+		for (const int32 Index : Candidates)
 		{
-			Candidates.Add(Index);
 			TotalWeight += Available[Index].Weight;
 		}
-	}
-
-	float Roll = FMath::FRandRange(0.f, TotalWeight);
-	for (const int32 Index : Candidates)
-	{
-		Roll -= Available[Index].Weight;
-		if (Roll <= 0.f)
+		float Roll = FMath::FRandRange(0.f, TotalWeight);
+		for (const int32 Index : Candidates)
 		{
-			return Index;
+			Roll -= Available[Index].Weight;
+			if (Roll <= 0.f)
+			{
+				return Index;
+			}
 		}
+		return Candidates.Num() > 0 ? Candidates.Last() : INDEX_NONE;
+	};
+
+	TArray<int32, TInlineAllocator<8>> InRange;
+	TArray<int32, TInlineAllocator<8>> Reachable;
+	for (int32 Index = 0; Index < Available.Num(); ++Index)
+	{
+		const FEnemyAttack& Attack = Available[Index];
+		const float* ReadyTime = AttackReadyTimes.Find(Index);
+		if (Attack.Weight <= 0.f || (ReadyTime && Now < *ReadyTime) || DistanceToTarget < Attack.MinRange)
+		{
+			continue;
+		}
+		(DistanceToTarget <= Attack.MaxRange ? InRange : Reachable).Add(Index);
 	}
-	return Candidates.Num() > 0 ? Candidates.Last() : INDEX_NONE;
+	return PickWeighted(InRange.Num() > 0 ? InRange : Reachable);
 }
 
 bool AEnemyCharacter::IsAttackInRange(int32 AttackIndex, float Distance) const
@@ -287,34 +296,7 @@ void AEnemyCharacter::PerformFallbackStrike()
 	else
 	{
 		// Simple frontal sweep standing in for an animated swing.
-		const float Reach = FMath::Max(Attack->MaxRange, 120.f);
-		const FVector Center = GetActorLocation() + GetActorForwardVector() * Reach * 0.5f;
-
-		TArray<FOverlapResult> Overlaps;
-		FCollisionQueryParams Params(SCENE_QUERY_STAT(EnemyFallbackStrike), false, this);
-		GetWorld()->OverlapMultiByObjectType(Overlaps, Center, FQuat::Identity, FCollisionObjectQueryParams(ECC_Pawn),
-			FCollisionShape::MakeSphere(Reach * 0.5f + 40.f), Params);
-
-		TSet<AActor*> Damaged;
-		for (const FOverlapResult& Overlap : Overlaps)
-		{
-			AActor* Victim = Overlap.GetActor();
-			if (!Victim || Damaged.Contains(Victim) || !UCombatLibrary::CanDamage(this, Victim))
-			{
-				continue;
-			}
-			Damaged.Add(Victim);
-
-			FCombatHit Hit;
-			Hit.Spec = Attack->Attack.Damage;
-			Hit.Instigator = this;
-			Hit.DamageCauser = this;
-			Hit.Target = Victim;
-			Hit.ImpactPoint = UCombatLibrary::GetTargetPoint(Victim);
-			Hit.HitDirection = (Victim->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
-			Hit.ImpactNormal = -Hit.HitDirection;
-			UCombatLibrary::ApplyDamage(Hit);
-		}
+		UCombatLibrary::ApplyFrontalSweep(this, Attack->Attack.Damage, FMath::Max(Attack->MaxRange, 120.f));
 	}
 
 	GetWorldTimerManager().SetTimer(FallbackTimer, this, &AEnemyCharacter::EndFallbackAttack, FMath::Max(0.05f, Attack->FallbackRecovery), false);

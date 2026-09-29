@@ -157,7 +157,7 @@ void AEnemyAIController::TickEngage(float DeltaTime, AActor* Target, float Dista
 	}
 	DecisionTimer = DecisionInterval * FMath::FRandRange(0.5f, 1.5f);
 
-	const int32 AttackIndex = Enemy->ChooseAttack();
+	const int32 AttackIndex = Enemy->ChooseAttack(Distance);
 	if (AttackIndex == INDEX_NONE)
 	{
 		return;
@@ -195,8 +195,9 @@ void AEnemyAIController::TickAttack(float DeltaTime, AActor* Target, float Dista
 				EnterState(EEnemyAIState::Engage);
 			}
 		}
-		else if (StateTime > MaxApproachTime)
+		else if (StateTime > MaxApproachTime || Distance < Enemy->GetAttacks()[PendingAttack].MinRange)
 		{
+			// Took too long, or the player closed in past this attack's minimum range: rethink.
 			ReleaseToken();
 			EnterState(EEnemyAIState::Engage);
 		}
