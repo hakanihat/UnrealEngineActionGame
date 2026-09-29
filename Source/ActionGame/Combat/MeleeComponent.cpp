@@ -356,7 +356,8 @@ void UMeleeComponent::GatherSamplePoints(TArray<FVector>& OutPoints) const
 
 	// Notify overrides may point at owner-mesh bones (e.g. a kick) that the weapon mesh doesn't have.
 	const UPrimitiveComponent* Source = TraceComponent;
-	if (Source && !ActiveStartSocket.IsNone() && !Source->DoesSocketExist(ActiveStartSocket) && OwnerCharacter)
+	if (Source && OwnerCharacter && !ActiveStartSocket.IsNone() && !Source->DoesSocketExist(ActiveStartSocket)
+		&& OwnerCharacter->GetMesh()->DoesSocketExist(ActiveStartSocket))
 	{
 		Source = OwnerCharacter->GetMesh();
 	}

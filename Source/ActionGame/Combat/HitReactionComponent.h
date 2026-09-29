@@ -72,6 +72,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Hit Reaction")
 	static EHitDirection ComputeHitDirection(const AActor* Victim, const FVector& HitDirection);
 
+	void SetPostHitInvulnerability(float Seconds) { PostHitInvulnerability = FMath::Max(0.f, Seconds); }
+	void SetCorpseLifeSpan(float Seconds) { CorpseLifeSpan = FMath::Max(0.f, Seconds); }
+	void SetInterruptThreshold(EHitReaction Threshold) { InterruptThreshold = Threshold; }
+	void SetKnockbackResistance(float Resistance) { KnockbackResistance = FMath::Clamp(Resistance, 0.f, 1.f); }
+
 	/** Fired whenever the owner is interrupted (not for twitch-only hits). */
 	UPROPERTY(BlueprintAssignable, Category = "Hit Reaction")
 	FOnHitReaction OnHitReaction;
