@@ -40,6 +40,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void Kill(AActor* Instigator = nullptr);
 
+	/** Configure from code (e.g. character constructors). Takes effect at BeginPlay. */
+	void SetMaxHealth(float NewMaxHealth) { MaxHealth = FMath::Max(1.f, NewMaxHealth); }
+	void SetMaxPoise(float NewMaxPoise) { MaxPoise = FMath::Max(1.f, NewMaxPoise); }
+
 	/** Refills poise; called when a stagger ends. */
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void ResetPoise();
