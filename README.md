@@ -32,6 +32,10 @@ Everything is written in C++ and data-driven. **The demo is playable before you 
 
 **Colors:** you are the blue capsule, grunts are red, and gunners are orange. The large red capsule is the boss.
 
+### Real animated characters (one click)
+In the editor's **Content Browser**, click **Add → Add Feature or Content Pack → Blueprint → Third Person → Add to Project**.
+The game detects the UE5 Mannequins automatically: you play as **Manny**, and enemies are **Quinn** (the boss is a scaled-up Quinn). They come with run, jump and idle animations, physics flinches on hit, and ragdoll deaths. You don't need to create any Blueprints.
+
 > **If the build fails:** the error popup doesn't say why. The real compiler errors are in
 > `%LOCALAPPDATA%\UnrealBuildTool\Log.txt`, or in Visual Studio's Output window if you build from `ActionGame.sln`.
 

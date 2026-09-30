@@ -40,6 +40,8 @@ Write-Host ""
 
 # 1) Game code: replace the template's module with ours.
 $SourceTarget = Join-Path $NewProjectDir 'Source\ActionGame'
+# First migration = the project still has the template's code, not ours.
+$FirstMigration = -not (Test-Path (Join-Path $SourceTarget 'ActionGameTags.h'))
 if (Test-Path $SourceTarget) {
     Remove-Item $SourceTarget -Recurse -Force
 }
@@ -95,13 +97,19 @@ Write-Host "[3/4] Config\DefaultEngine.ini updated (game mode, physics, navigati
 
 # 4) Remove stale build output so Unreal recompiles with the new code
 #    (otherwise it would load the template's old DLL and our classes would be missing).
-foreach ($Folder in @('Binaries', 'Intermediate')) {
-    $Path = Join-Path $NewProjectDir $Folder
-    if (Test-Path $Path) {
-        Remove-Item $Path -Recurse -Force
+#    Only needed the first time; updates keep the build output so Unreal rebuilds incrementally.
+if ($FirstMigration) {
+    foreach ($Folder in @('Binaries', 'Intermediate')) {
+        $Path = Join-Path $NewProjectDir $Folder
+        if (Test-Path $Path) {
+            Remove-Item $Path -Recurse -Force
+        }
     }
+    Write-Host "[4/4] Template build output removed"
 }
-Write-Host "[4/4] Old build output removed"
+else {
+    Write-Host "[4/4] Update: existing build output kept"
+}
 
 Write-Host ""
 Write-Host "Done! Now open the new project from the Epic Games Launcher (Library > My Projects)" -ForegroundColor Green

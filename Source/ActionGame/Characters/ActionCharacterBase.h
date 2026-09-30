@@ -104,8 +104,11 @@ protected:
 	FName TargetPointBone = TEXT("spine_03");
 
 private:
-	/** Shows a simple capsule body when no character mesh is set, so the game is playable with zero art. */
-	void CreatePlaceholderBodyIfNeeded();
+	/**
+	 * When no character mesh is assigned: uses the UE5 Mannequin (Third Person content pack) if present,
+	 * otherwise a coloured capsule, so the game is always playable regardless of art.
+	 */
+	void ApplyDefaultVisualsIfNeeded();
 
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMeshComponent> PlaceholderBody;

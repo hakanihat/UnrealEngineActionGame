@@ -21,6 +21,7 @@ public class ActionGame : ModuleRules
 			"PhysicsCore",
 			"Niagara",
 			"AIModule",
+			"AssetRegistry",
 			"NavigationSystem"
 		});
 	}

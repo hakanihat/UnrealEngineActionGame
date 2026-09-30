@@ -1,6 +1,10 @@
 #include "Characters/ActionCharacterBase.h"
 #include "ActionGame.h"
 #include "ActionGameTags.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/Skeleton.h"
+#include "AssetRegistry/AssetData.h"
+#include "AssetRegistry/IAssetRegistry.h"
 #include "Combat/HealthComponent.h"
 #include "Combat/HitReactionComponent.h"
 #include "Combat/MeleeComponent.h"
@@ -47,21 +51,97 @@ AActionCharacterBase::AActionCharacterBase(const FObjectInitializer& ObjectIniti
 	bUseControllerRotationRoll = false;
 }
 
+namespace
+{
+	/** First asset of Class whose name starts with Prefix (e.g. "SKM_Manny" also matches "SKM_Manny_Simple"). */
+	FAssetData FindAssetByNamePrefix(const FTopLevelAssetPath& Class, const FString& Prefix)
+	{
+		TArray<FAssetData> Assets;
+		IAssetRegistry::GetChecked().GetAssetsByClass(Class, Assets);
+
+		const FAssetData* Best = nullptr;
+		for (const FAssetData& Asset : Assets)
+		{
+			const FString Name = Asset.AssetName.ToString();
+			if (Name.StartsWith(Prefix) && (!Best || Name.Len() < Best->AssetName.ToString().Len()))
+			{
+				Best = &Asset; // Shortest match = the plain variant.
+			}
+		}
+		return Best ? *Best : FAssetData();
+	}
+
+	/** Finds the main locomotion Animation Blueprint made for Skeleton. */
+	UClass* FindAnimClassForSkeleton(const USkeleton* Skeleton)
+	{
+		if (!Skeleton)
+		{
+			return nullptr;
+		}
+		TArray<FAssetData> Assets;
+		IAssetRegistry::GetChecked().GetAssetsByClass(FTopLevelAssetPath(TEXT("/Script/Engine"), TEXT("AnimBlueprint")), Assets);
+
+		const FString SkeletonPath = Skeleton->GetPathName();
+		const FAssetData* Best = nullptr;
+		int32 BestScore = -1;
+		for (const FAssetData& Asset : Assets)
+		{
+			FString TargetSkeleton;
+			if (!Asset.GetTagValue(TEXT("TargetSkeleton"), TargetSkeleton) || !TargetSkeleton.Contains(SkeletonPath))
+			{
+				continue;
+			}
+			// Skip helper graphs (post-process, linked layers); prefer the template's main ABP.
+			const FString Name = Asset.AssetName.ToString();
+			if (Name.Contains(TEXT("PostProcess")) || Name.Contains(TEXT("Layer")))
+			{
+				continue;
+			}
+			const int32 Score = Name.Contains(TEXT("Unarmed")) ? 3 : (Name.Contains(TEXT("Manny")) || Name.Contains(TEXT("Quinn"))) ? 2 : 1;
+			if (Score > BestScore)
+			{
+				BestScore = Score;
+				Best = &Asset;
+			}
+		}
+		return Best ? LoadObject<UClass>(nullptr, *(Best->GetObjectPathString() + TEXT("_C"))) : nullptr;
+	}
+}
+
 void AActionCharacterBase::BeginPlay()
 {
+	// Before Super: components (hit reactions, melee) read the skeleton in their own BeginPlay.
+	ApplyDefaultVisualsIfNeeded();
+
 	Super::BeginPlay();
 
 	HealthComponent->OnDeath.AddDynamic(this, &AActionCharacterBase::HandleDeath);
 	HitReactionComponent->OnHitReaction.AddDynamic(this, &AActionCharacterBase::HandleInterrupted);
-	CreatePlaceholderBodyIfNeeded();
 }
 
-void AActionCharacterBase::CreatePlaceholderBodyIfNeeded()
+void AActionCharacterBase::ApplyDefaultVisualsIfNeeded()
 {
-	if (GetMesh()->GetSkeletalMeshAsset())
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (MeshComp->GetSkeletalMeshAsset())
 	{
+		return; // A Blueprint already assigned a character: respect it.
+	}
+
+	// 1) Use the UE5 Mannequins if the Third Person content pack is in the project:
+	//    Manny for the player, Quinn for enemies.
+	const FString MeshPrefix = Team == ECombatTeam::Player ? TEXT("SKM_Manny") : TEXT("SKM_Quinn");
+	const FAssetData MeshAsset = FindAssetByNamePrefix(USkeletalMesh::StaticClass()->GetClassPathName(), MeshPrefix);
+	if (USkeletalMesh* Mannequin = Cast<USkeletalMesh>(MeshAsset.GetAsset()))
+	{
+		MeshComp->SetSkeletalMeshAsset(Mannequin);
+		if (UClass* AnimClass = FindAnimClassForSkeleton(Mannequin->GetSkeleton()))
+		{
+			MeshComp->SetAnimInstanceClass(AnimClass);
+		}
 		return;
 	}
+
+	// 2) Otherwise show a coloured capsule so the game is still playable with zero art.
 	UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
 	if (!Cylinder)
 	{
