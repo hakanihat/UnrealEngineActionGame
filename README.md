@@ -35,6 +35,15 @@ Everything is written in C++ and data-driven. **The demo is playable before you 
 > **If the build fails:** the error popup doesn't say why. The real compiler errors are in
 > `%LOCALAPPDATA%\UnrealBuildTool\Log.txt`, or in Visual Studio's Output window if you build from `ActionGame.sln`.
 
+### Moving the code into a fresh Unreal project (alternative setup)
+1. **Create an empty project:** in the Unreal Project Browser choose **Games → Blank**, select **C++**, and name it exactly **`ActionGame`**. Put it outside this repository folder, e.g. `D:\UnrealProjects`.
+   This step compiles an empty project, so it also proves your Unreal + Visual Studio setup works.
+2. **Close the new project:** exit both the Unreal Editor and Visual Studio.
+3. **Copy the code over:** double-click **`CopyToNewProject.bat`** in this repository folder, drag the new project's folder into the window, and press Enter.
+   It copies the code, docs and settings, and deletes the new project's old build files so Unreal recompiles.
+4. **Open and rebuild:** open the new project from the **Epic Games Launcher → Library → My Projects** and click **Yes** to rebuild.
+5. **Updating later:** after each `git pull` in this folder, run `CopyToNewProject.bat` again.
+
 ## 2. Controls
 
 | Action | Keyboard / Mouse | Gamepad |
