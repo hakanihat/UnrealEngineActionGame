@@ -407,7 +407,9 @@ void UHitReactionComponent::StartRagdoll()
 
 	if (PhysicalAnimation)
 	{
-		PhysicalAnimation->ApplyPhysicalAnimationStrengthMultiplyer(0.f);
+		// Detaching the driven mesh removes every physical-animation motor, so the ragdoll
+		// goes fully limp instead of being pulled back toward the (stopped) animation pose.
+		PhysicalAnimation->SetSkeletalMeshComponent(nullptr);
 	}
 	if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
 	{
