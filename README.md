@@ -17,7 +17,7 @@ Everything is written in C++ and data-driven. **The demo is playable before you 
 ## 1. Quick start (no art needed)
 
 **Requirements:**
-- Unreal Engine **5.5+**
+- Unreal Engine **5.8** (the project is set to 5.8; for another version, right-click `ActionGame.uproject` → *Switch Unreal Engine version*)
 - Visual Studio 2022 with the **"Game development with C++"** workload
 
 **Steps:**
